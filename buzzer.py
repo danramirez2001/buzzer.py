@@ -4,43 +4,39 @@ from time import sleep
 import time
 import sys
 
-BT_ADDR = ''  # You can put your Bluetooth address here 
+BT_ADDR = ''            # You can put your Bluetooth address here 
+THRESHOLD = -15         # Threshold value under which the device will send a warning
+BIN_SIZE = 10           # Number of measurements in running average
+TIME_DELAY = 1          # Time between measurements in seconds
 rssiList = []
-led = LED(4) # Choose the correct pin number
+led = LED(4)            # GPIO pin number corresponding to output device
 led.off()
 
 
-def print_usage():
-    print "Usage: python test_address.py <bluetooth-address> [number-of-requests]"
+
 
 
 def main():
     if BT_ADDR:
         addr = BT_ADDR
     else:
-        print('No Bluetooth Address Found')
-        print_usage()
+        print('No Bluetooth Address Found')         # Check whether address can be found 
         return
     btrssi = BluetoothRSSI(addr=addr)
-    print('Starting count')
-    for i in range(0,10):
+    for i in range(0,BIN_SIZE):                     # Populate initial list up to BIN_SIZE
         rssi = btrssi.get_rssi()
         rssiList.append(rssi)
-    print('Done count')
-    while(True):
-        led.off()
-	print('OFF')
-        rssi = btrssi.get_rssi()
-	print(rssi)
-        rssiList.insert(0,rssi)
-        del rssiList[-1]
-	print(rssiList)
-        if(getAverage(rssiList) < -15):
+    while(True):                                    # Performs continual updates at an interval of TIME_DELAY 
+        led.off()                                   # Reset output device
+        rssi = btrssi.get_rssi()                    # Get current RSSI
+        rssiList.insert(0,rssi)                     # Add RSSI to list
+        del rssiList[-1]                            # Pop last element off list
+        if(getAverage(rssiList) < THRESHOLD):       # Check if running average is beneath THRESHOLD - if yes, turn on output
             led.on()
 	    print('ALARM')
         time.sleep(1)
 
-def getAverage(list):
+def getAverage(list):                               # Return average of current list of RSSI values
     sum = 0
     for i in range (0,len(list)):
         sum += list[i]
